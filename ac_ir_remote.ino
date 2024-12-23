@@ -49,6 +49,8 @@ boolean isTempError = false;
 boolean isAcOn = false;
 boolean previousAcState = false;
 
+boolean isFirstStartup = true;
+
 boolean isEnabled = false;
 boolean isThresholdChange = false;
 
@@ -61,7 +63,7 @@ void setup() {
 
   enableButton.setDebounce(50);
   enableButton.setTimeout(300);
-  enableButton.setClickTimeout(300);
+  enableButton.setClickTimeout(500);
   enableButton.setType(HIGH_PULL);
   enableButton.setDirection(NORM_OPEN);
 
@@ -81,7 +83,7 @@ void setup() {
 
   screenUpdateTimer.setInterval(200);
   ledResetTimer.setInterval(500);
-  tempSensorUpdateTimer.setInterval(5000);
+  tempSensorUpdateTimer.setInterval(1000);
   tempControlUpdateTimer.setInterval(5000);
 
   pinMode(ENABLED_LED_PIN, OUTPUT);
@@ -142,7 +144,7 @@ void loop() {
   }
 
   if (tempControlUpdateTimer.isReady()) {
-    updateTempControl();
+    updateTempControl(false);
   }
 }
 
@@ -164,7 +166,7 @@ void handleDownButton() {
   memory.update();
 }
 
-void updateTempControl() {
+void updateTempControl(boolean forceChange) {
   Serial.println("Update temp control.");
 
   if (temperature > data.setTemperature + data.temperatureThreshold) {
@@ -179,12 +181,13 @@ void updateTempControl() {
     isAcOn = false;
   }
 
-  updateAcIRState();
+  updateAcIRState(isFirstStartup || forceChange);
+  isFirstStartup = false;
 }
 
 void handleEnableButtonPress() {
   isEnabled = !isEnabled;
-  updateTempControl();
+  updateTempControl(true);
 }
 
 void handleIsEnabledLed() {
@@ -195,8 +198,8 @@ void handleIsEnabledLed() {
   }
 }
 
-void updateAcIRState() {
-  if (isAcOn == previousAcState) {
+void updateAcIRState(boolean forceChange) {
+  if (forceChange == false && isAcOn == previousAcState) {
     Serial.println("AC state has not changed.");
     return;
   }
@@ -220,11 +223,11 @@ void updateScreen() {
   oled.print(" PAc: ");
   oled.print(previousAcState);
 
+  oled.setCursor(0, 1);
   if (isTempError) {
-    oled.setCursor(0, 1);
-    oled.print("TEMP ERROR");
+    oled.print("TEMP SENSOR ERROR");
   } else {
-    oled.print("                   ");
+    oled.print("OK                 ");
   }
 
   oled.setCursor(0, 3);
