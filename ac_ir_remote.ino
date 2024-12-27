@@ -46,6 +46,8 @@ double humidity = 0;
 // double temperatureThreshold = 0.18;
 
 boolean isTempError = false;
+int tempErrorCode = 0;
+
 boolean isAcOn = false;
 boolean previousAcState = false;
 
@@ -55,7 +57,7 @@ boolean isEnabled = false;
 boolean isThresholdChange = false;
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   oled.init();
   tempSensor.setWire(&Wire);
 
@@ -225,7 +227,8 @@ void updateScreen() {
 
   oled.setCursor(0, 1);
   if (isTempError) {
-    oled.print("TEMP SENSOR ERROR");
+    oled.print("TEMP SENSOR ERROR ");
+    oled.print(tempErrorCode);
   } else {
     oled.print("OK                 ");
   }
@@ -269,7 +272,9 @@ void updateScreen() {
 }
 
 void updateTempSensor() {
-  if (tempSensor.update() != 0) {
+  tempErrorCode = tempSensor.update();
+
+  if (tempErrorCode != 0) {
     Serial.println("Error: Cannot update sensor values.");
     isTempError = true;
   } else {
