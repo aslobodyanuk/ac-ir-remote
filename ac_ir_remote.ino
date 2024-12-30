@@ -9,6 +9,9 @@
 #define ENABLE_BUTTON_PIN 4
 #define ENABLED_LED_PIN 9
 #define FEEDBACK_LED_PIN 13
+#define TEMP_SENSOR_PIN 6
+
+#define TEMP_SENSOR_POWERON_DELAY_MS 1000
 
 #define UP_BUTTON_PIN 8
 #define DOWN_BUTTON_PIN 7
@@ -56,6 +59,8 @@ boolean isFirstStartup = true;
 boolean isEnabled = false;
 boolean isThresholdChange = false;
 
+boolean screenHearbeatState = true;
+
 void setup() {
   //Serial.begin(9600);
   oled.init();
@@ -91,12 +96,12 @@ void setup() {
   pinMode(ENABLED_LED_PIN, OUTPUT);
   pinMode(FEEDBACK_LED_PIN, OUTPUT);
   pinMode(IR_LED_PIN, OUTPUT);
+  pinMode(TEMP_SENSOR_PIN, OUTPUT);
 
   heatpumpIR = new GreeYACHeatpumpIR();
 
   oled.clear();
   initializeMemory();
-  updateTempSensor();
 
   // Reset EEPROM
   // memory.reset();  
@@ -215,23 +220,34 @@ void updateAcIRState(boolean forceChange) {
   previousAcState = isAcOn;
 }
 
+void printStatus() {
+  oled.setCursor(0, 1);
+
+  if (isFirstStartup) {
+    oled.print("STARTUP           ");
+    return;
+  }
+
+  if (isTempError) {
+    oled.print("TEMP SENSOR ERROR ");
+    oled.print(tempErrorCode);
+    return;
+  }
+
+  oled.print("OK                 ");
+}
+
 void updateScreen() {
   oled.home();
   oled.setScale(1);
 
   oled.setCursor(0, 0);
-  oled.print("IsAc: ");
+  oled.print("Ac: ");
   oled.print(isAcOn);
   oled.print(" PAc: ");
   oled.print(previousAcState);
 
-  oled.setCursor(0, 1);
-  if (isTempError) {
-    oled.print("TEMP SENSOR ERROR ");
-    oled.print(tempErrorCode);
-  } else {
-    oled.print("OK                 ");
-  }
+  printStatus();
 
   oled.setCursor(0, 3);
   oled.print("Cur: ");
@@ -268,10 +284,15 @@ void updateScreen() {
     oled.print("Disabled  ");
   }
 
+  oled.rect(124, 60, 126, 62, screenHearbeatState);
   oled.update();
+  screenHearbeatState = !screenHearbeatState;
 }
 
 void updateTempSensor() {
+  digitalWrite(TEMP_SENSOR_PIN, HIGH);
+  delay(TEMP_SENSOR_POWERON_DELAY_MS);
+
   tempErrorCode = tempSensor.update();
 
   if (tempErrorCode != 0) {
