@@ -70,7 +70,7 @@ void setup() {
 
   enableButton.setDebounce(50);
   enableButton.setTimeout(300);
-  enableButton.setClickTimeout(500);
+  enableButton.setClickTimeout(300);
   enableButton.setType(HIGH_PULL);
   enableButton.setDirection(NORM_OPEN);
 
@@ -306,6 +306,8 @@ void updateTempSensor() {
     Serial.print("T: " + String(tempSensor.temperatureC) + " C");    
     Serial.println(" H: " + String(tempSensor.humidity) + " %");
   }
+
+  digitalWrite(TEMP_SENSOR_PIN, LOW);
 }
 
 void turnOnAc() {
