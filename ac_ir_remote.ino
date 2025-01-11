@@ -90,7 +90,7 @@ void setup() {
 
   screenUpdateTimer.setInterval(200);
   ledResetTimer.setInterval(500);
-  tempSensorUpdateTimer.setInterval(5000); // Should be less than 2s, because of sensor sampling rate
+  tempSensorUpdateTimer.setInterval(60000); // Should be less than 2s, because of sensor sampling rate
   tempControlUpdateTimer.setInterval(5000);
 
   pinMode(ENABLED_LED_PIN, OUTPUT);
