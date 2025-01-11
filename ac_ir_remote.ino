@@ -102,6 +102,7 @@ void setup() {
 
   oled.clear();
   initializeMemory();
+  updateTempSensor();
 
   // Reset EEPROM
   // memory.reset();  
