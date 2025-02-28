@@ -33,6 +33,7 @@ GTimer_ms tempSensorUpdateTimer;
 AM2320_asukiaaa tempSensor;
 
 GTimer_ms tempControlUpdateTimer;
+GTimer_ms acFallBackUpdateTimer;
 
 struct Data {
   double setTemperature;
@@ -44,6 +45,7 @@ EEManager memory(data, EEPROM_WRITE_DELAY_MS);
 
 double temperature = 0;
 double humidity = 0;
+double lastEnabledTemperature = 0;
 
 // double setTemperature = 21.2;
 // double temperatureThreshold = 0.18;
@@ -92,6 +94,7 @@ void setup() {
   ledResetTimer.setInterval(500);
   tempSensorUpdateTimer.setInterval(60000); // Should be less than 2s, because of sensor sampling rate
   tempControlUpdateTimer.setInterval(5000);
+  acFallBackUpdateTimer.setInterval(240000); // 4 minutes
 
   pinMode(ENABLED_LED_PIN, OUTPUT);
   pinMode(FEEDBACK_LED_PIN, OUTPUT);
@@ -154,6 +157,10 @@ void loop() {
   if (tempControlUpdateTimer.isReady()) {
     updateTempControl(false);
   }
+
+  if (acFallBackUpdateTimer.isReady()) {
+    checkAndHandleIfAcIsNotWorking();
+  }
 }
 
 void handleUpButton() {
@@ -172,6 +179,17 @@ void handleDownButton() {
     data.setTemperature -= 0.1;
   }
   memory.update();
+}
+
+void checkAndHandleIfAcIsNotWorking() {
+  if (isEnabled == false) {
+    return;
+  }
+
+  if (temperature <= lastEnabledTemperature) {
+    Serial.println("AC is not working.");
+    updateTempControl(true);
+  }
 }
 
 void updateTempControl(boolean forceChange) {
@@ -214,11 +232,13 @@ void updateAcIRState(boolean forceChange) {
 
   if (isAcOn) {
     turnOnAc();
+    lastEnabledTemperature = temperature;
   } else {
     turnOffAc();
   }
 
   previousAcState = isAcOn;
+  acFallBackUpdateTimer.reset();
 }
 
 void updateTempSensor() {
